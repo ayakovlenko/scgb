@@ -3,12 +3,10 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"scgb/internal"
 )
 
@@ -17,6 +15,9 @@ var appSrcDir string
 
 //go:embed generated/app-name
 var appName string
+
+//go:embed generated/app-hash
+var existingHash string
 
 type exitCode int
 
@@ -27,16 +28,8 @@ const (
 
 func runMain() exitCode {
 	fmt.Println("running main...") // TODO: EDIT ME
+	fmt.Println("hash:", existingHash)
 	return exitCodeOk
-}
-
-func getHashFilePath() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(home, "."+appName, "hash"), nil
 }
 
 func main() {
@@ -82,30 +75,6 @@ func main() {
 }
 
 func checkNeedsRecompiling(appSrcPath string) (bool, error) {
-	hashFilePath, err := getHashFilePath()
-	if err != nil {
-		return false, err
-	}
-
-	f, err := os.Open(hashFilePath)
-	if os.IsNotExist(err) {
-		return true, nil
-	}
-	defer f.Close()
-
-	if err != nil {
-		// check if error is file not found
-		return false, err
-	}
-
-	// read f contents to string
-	bs, err := io.ReadAll(f)
-
-	if err != nil {
-		return false, err
-	}
-
-	existingHash := string(bs)
 	currentHash, err := internal.Hash(appSrcPath)
 	if err != nil {
 		return false, err
@@ -119,26 +88,17 @@ func checkNeedsRecompiling(appSrcPath string) (bool, error) {
 }
 
 func writeCurrentHash(appSrcPath string) error {
-	hashFilePath, err := getHashFilePath()
-	if err != nil {
-		return err
-	}
-
 	currentHash, err := internal.Hash(appSrcPath)
 	if err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Dir(hashFilePath), 0666); err != nil {
-		return err
-	}
-
-	f, err := os.Create(hashFilePath)
+	// open file in write mode
+	f, err := os.OpenFile(path.Join(appSrcPath, "cmd", appName, "generated", "app-hash"), os.O_TRUNC|os.O_WRONLY, os.FileMode(0644))
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-
 	_, err = f.WriteString(currentHash)
 	if err != nil {
 		return err

@@ -8,7 +8,7 @@ Install once:
 ./scripts/install.sh
 ```
 
-Enjoy a self-recompiling Go binary as you change the source code:
+Enjoy a self-compiling Go binary as you change the source code:
 
 ```sh
 $ scgb
