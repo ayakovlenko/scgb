@@ -39,39 +39,39 @@ func main() {
 		handleExitCode(err)
 	}
 
-	if needsRecompiling {
-		if err := Compile(path.Join(appSrcDir, "cmd", appName)); err != nil {
-			handleExitCode(err)
-		}
-
-		log.Println("recompiling...")
-
-		// write current hash
-		if err := writeCurrentHash(appSrcDir); err != nil {
-			handleExitCode(err)
-		}
-
-		executable, err := os.Executable()
-		if err != nil {
-			handleExitCode(err)
-		}
-
-		// execute binary in `executable`
-		log.Printf("re-running %s\n", executable)
-		cmd := exec.Command(executable)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Stdin = os.Stdin
-
-		if err := cmd.Run(); err != nil {
-			handleExitCode(err)
-		}
-
-		handleExitCode(nil)
+	if !needsRecompiling {
+		code := runMain()
+		os.Exit(int(code))
 	}
 
-	code := runMain()
-	os.Exit(int(code))
+	if err := Compile(path.Join(appSrcDir, "cmd", appName)); err != nil {
+		handleExitCode(err)
+	}
+
+	log.Println("recompiling...")
+
+	// write current hash
+	if err := writeCurrentHash(appSrcDir); err != nil {
+		handleExitCode(err)
+	}
+
+	executable, err := os.Executable()
+	if err != nil {
+		handleExitCode(err)
+	}
+
+	// execute binary in `executable`
+	log.Printf("re-running %s\n", executable)
+	cmd := exec.Command(executable)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	if err := cmd.Run(); err != nil {
+		handleExitCode(err)
+	}
+
+	handleExitCode(nil)
 }
 
 func checkNeedsRecompiling(appSrcPath string) (bool, error) {
