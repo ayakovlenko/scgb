@@ -44,14 +44,13 @@ func main() {
 		os.Exit(int(code))
 	}
 
-	if err := Compile(path.Join(appSrcDir, "cmd", appName)); err != nil {
+	log.Println("recompiling...")
+
+	if err := writeCurrentHash(appSrcDir); err != nil {
 		handleExitCode(err)
 	}
 
-	log.Println("recompiling...")
-
-	// write current hash
-	if err := writeCurrentHash(appSrcDir); err != nil {
+	if err := Compile(path.Join(appSrcDir, "cmd", appName)); err != nil {
 		handleExitCode(err)
 	}
 
@@ -80,11 +79,7 @@ func checkNeedsRecompiling(appSrcPath string) (bool, error) {
 		return false, err
 	}
 
-	if currentHash != existingHash {
-		return true, nil
-	}
-
-	return false, nil
+	return currentHash != existingHash, nil
 }
 
 func writeCurrentHash(appSrcPath string) error {
@@ -94,13 +89,15 @@ func writeCurrentHash(appSrcPath string) error {
 	}
 
 	// open file in write mode
-	f, err := os.OpenFile(path.Join(appSrcPath, "cmd", appName, "generated", "app-hash"), os.O_TRUNC|os.O_WRONLY, os.FileMode(0644))
+	appHashPath := path.Join(appSrcPath, "cmd", appName, "generated", "app-hash")
+	f, err := os.OpenFile(appHashPath, os.O_TRUNC|os.O_WRONLY, os.FileMode(0666))
+
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	_, err = f.WriteString(currentHash)
-	if err != nil {
+
+	if _, err = f.WriteString(currentHash); err != nil {
 		return err
 	}
 
@@ -113,11 +110,7 @@ func Compile(selfPath string) error {
 	execCmd.Stdout = os.Stdout
 	execCmd.Stderr = os.Stderr
 
-	if err := execCmd.Run(); err != nil {
-		return err
-	}
-
-	return nil
+	return execCmd.Run()
 }
 
 func toExitCode(err error) exitCode {
