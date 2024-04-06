@@ -1,6 +1,7 @@
-# scgb
+# scgb (self-compiling Go binary)
 
-scgb – stands for 'self-compiling Go binary'
+> [!CAUTION]
+> This is a PoC and not intended for production use.
 
 Install once:
 
